@@ -48,7 +48,9 @@ const server = http.createServer(app);
 //     credentials: true,
 //   },
 // });
-
+app.get('/', (req, res) => {
+  res.send('Hello from Vercel!');
+});
 app.use("/api/auth", authRoutes);
 
 // app.get("/messages", async (req, res) => {
