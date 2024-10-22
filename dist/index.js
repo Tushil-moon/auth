@@ -10,6 +10,7 @@ const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const path_1 = __importDefault(require("path"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const firebase_1 = require("./config/firebase");
+const helmet_1 = __importDefault(require("helmet"));
 const PORT = process.env.PORT || 8801;
 const app = (0, express_1.default)();
 firebase_1.fireapp;
@@ -19,6 +20,12 @@ app.use((0, cors_1.default)({
     origin: "*", // Allow all origins (consider specifying for production)
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+}));
+app.use(helmet_1.default.contentSecurityPolicy({
+    directives: {
+        defaultSrc: ["'none'"],
+        scriptSrc: ["'self'", "https://vercel.live"]
+    }
 }));
 // Rate limiting 
 const limiter = (0, express_rate_limit_1.default)({
