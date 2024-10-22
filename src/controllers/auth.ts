@@ -1,11 +1,11 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { dbconnection } from "../config/database";
 import { sendResponse } from "../utils/responseFormatter";
 import { formatUserResponse } from "../utils/userFormat";
 import { config } from "dotenv";
-// import { sendNotification } from "../../../ngrx-auth/notification";
+import { getMessaging } from "firebase-admin/messaging";
 
 // Load environment variables from .env file
 config();
@@ -113,4 +113,40 @@ export const login = async (req: Request, res: Response) => {
     connection.release();
     console.log("connection release!");
   }
+};
+
+export const sendNotification = (req: any, res: any) => {
+  const data = req.body; // Fcm token received by front end application
+  console.log(data);
+  if (!data) {
+    sendResponse(res, {
+      status: 400,
+      message: "provide correct data",
+    });
+  }
+  const message = {
+    notification: {
+      title: data.notification.title,
+      body: data.notification.body,
+    },
+    webpush: {
+      notification: {
+        icon: data.notification.icon, // Set the icon for web notifications
+      },
+    },
+    token: data.to, // FCM token from client-side
+  };
+  getMessaging()
+    .send(message)
+    .then((response) => {
+      console.log("Notification Sent");
+      sendResponse(res, {
+        status: 200,
+        message: "notification sent",
+        data: "",
+      });
+    })
+    .catch((error) => {
+      console.log("Error sending message:", error);
+    });
 };

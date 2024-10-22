@@ -15,5 +15,5 @@ router.post("/login", auth_1.login);
 // Verify a user
 router.post("/verifyuser", verifyToken_1.verifyToken);
 // Send Notification
-// router.post("/send-notification", sendNotification);
+router.post("/send-notification", auth_1.sendNotification);
 exports.default = router;

@@ -1,5 +1,5 @@
 import express from "express";
-import { login, register } from "../controllers/auth";
+import { login, register, sendNotification } from "../controllers/auth";
 import { verifyToken } from "../middlewares/verifyToken";
 // import { sendNotification } from "../../../ngrx-auth/notification";
 
@@ -16,6 +16,6 @@ router.post("/verifyuser", verifyToken);
 
 // Send Notification
 
-// router.post("/send-notification", sendNotification);
+router.post("/send-notification", sendNotification);
 
 export default router;

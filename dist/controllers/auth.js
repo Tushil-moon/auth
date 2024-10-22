@@ -12,14 +12,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.login = exports.register = void 0;
+exports.sendNotification = exports.login = exports.register = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const database_1 = require("../config/database");
 const responseFormatter_1 = require("../utils/responseFormatter");
 const userFormat_1 = require("../utils/userFormat");
 const dotenv_1 = require("dotenv");
-// import { sendNotification } from "../../../ngrx-auth/notification";
+const messaging_1 = require("firebase-admin/messaging");
 // Load environment variables from .env file
 (0, dotenv_1.config)();
 const key = process.env.SECRET_KEY;
@@ -117,3 +117,39 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.login = login;
+const sendNotification = (req, res) => {
+    const data = req.body; // Fcm token received by front end application
+    console.log(data);
+    if (!data) {
+        (0, responseFormatter_1.sendResponse)(res, {
+            status: 400,
+            message: "provide correct data",
+        });
+    }
+    const message = {
+        notification: {
+            title: data.notification.title,
+            body: data.notification.body,
+        },
+        webpush: {
+            notification: {
+                icon: data.notification.icon, // Set the icon for web notifications
+            },
+        },
+        token: data.to, // FCM token from client-side
+    };
+    (0, messaging_1.getMessaging)()
+        .send(message)
+        .then((response) => {
+        console.log("Notification Sent");
+        (0, responseFormatter_1.sendResponse)(res, {
+            status: 200,
+            message: "notification sent",
+            data: "",
+        });
+    })
+        .catch((error) => {
+        console.log("Error sending message:", error);
+    });
+};
+exports.sendNotification = sendNotification;

@@ -2,12 +2,12 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes";
-import path from "path";
 import rateLimit from "express-rate-limit";
 import dotenv from 'dotenv';
+import { fireapp } from "./config/firebase";
 
 dotenv.config(); // Load environment variables
-
+fireapp;
 const PORT = process.env.PORT || 8801;
 const app = express();
 

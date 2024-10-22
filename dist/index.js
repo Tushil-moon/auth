@@ -9,7 +9,9 @@ const cors_1 = __importDefault(require("cors"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const firebase_1 = require("./config/firebase");
 dotenv_1.default.config(); // Load environment variables
+firebase_1.fireapp;
 const PORT = process.env.PORT || 8801;
 const app = (0, express_1.default)();
 // Middleware
