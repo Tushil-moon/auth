@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyToken = exports.login = exports.register = void 0;
+exports.login = exports.register = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const database_1 = require("../config/database");
@@ -31,21 +31,21 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (!email) {
         (0, responseFormatter_1.sendResponse)(res, {
             status: 400,
-            message: "email is required"
+            message: "email is required",
         });
         return;
     }
     if (!name) {
         (0, responseFormatter_1.sendResponse)(res, {
             status: 400,
-            message: "name is required"
+            message: "name is required",
         });
         return;
     }
     if (!password) {
         (0, responseFormatter_1.sendResponse)(res, {
             status: 400,
-            message: "password is required"
+            message: "password is required",
         });
         return;
     }
@@ -116,19 +116,3 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.login = login;
-const verifyToken = (req, res) => {
-    const { token } = req.body; // Extract token from request body
-    if (!token) {
-        return res
-            .status(401)
-            .json({ message: "Access denied. No token provided." });
-    }
-    jsonwebtoken_1.default.verify(token, key, (err, decoded) => {
-        if (err) {
-            return res.status(403).json({ message: "Invalid token." });
-        }
-        // Send response of true after successful verification
-        return res.status(200).json({ success: true, user: decoded });
-    });
-};
-exports.verifyToken = verifyToken;

@@ -4,11 +4,6 @@ import path from "path";
 
 const serviceAccountPath = path.join(
   __dirname,
-  "..",
-  "..",
-  "..",
-  "..",
-  "Downloads",
   "angularchatapp-8b6c5-firebase-adminsdk-1q4f5-adca81438f.json"
 );
 console.log(serviceAccountPath);
