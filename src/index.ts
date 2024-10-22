@@ -13,7 +13,6 @@ fireapp;
 
 // Middleware
 app.use(bodyParser.json()); 
-app.use(express.static(path.join(__dirname, "public")));
 app.use(cors({
   origin: "*", // Allow all origins (consider specifying for production)
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

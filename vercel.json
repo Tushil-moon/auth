@@ -10,7 +10,10 @@
     "routes": [
         {
             "src": "/(.*)",
-            "dest": "dist/index.js"
+            "dest": "dist/index.js",
+            "headers": {
+                "Content-Security-Policy": "default-src 'none'; script-src 'self' https://vercel.live;"
+            }
         }
     ]
 }

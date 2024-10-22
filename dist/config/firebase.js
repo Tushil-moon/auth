@@ -9,5 +9,5 @@ const config = {
 };
 exports.fireapp = (0, app_1.initializeApp)({
     credential: (0, app_1.cert)(config),
-    projectId: config.projectId, // Alternatively, you can use "angularchatapp-8b6c5"
+    projectId: config.projectId,
 });

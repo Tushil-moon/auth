@@ -15,7 +15,6 @@ const app = (0, express_1.default)();
 firebase_1.fireapp;
 // Middleware
 app.use(body_parser_1.default.json());
-app.use(express_1.default.static(path_1.default.join(__dirname, "public")));
 app.use((0, cors_1.default)({
     origin: "*", // Allow all origins (consider specifying for production)
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
