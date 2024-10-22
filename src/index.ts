@@ -14,14 +14,14 @@ const app = express();
 // Middleware
 app.use(bodyParser.json());
 app.use(cors({
-  origin: ["*"], // Adjust for production
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  origin: "*", // Allow all origins
+  methods: "GET,POST,PUT,DELETE,OPTIONS", // Allow all HTTP methods
+  allowedHeaders: "*", // Allow all headers
 }));
 
 // Rate limiting 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 3000, // 15 minutes
   max: 100,
   message: {
     status: 429,

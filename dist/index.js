@@ -17,13 +17,13 @@ const app = (0, express_1.default)();
 // Middleware
 app.use(body_parser_1.default.json());
 app.use((0, cors_1.default)({
-    origin: ["*"], // Adjust for production
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    origin: "*", // Allow all origins
+    methods: "GET,POST,PUT,DELETE,OPTIONS", // Allow all HTTP methods
+    allowedHeaders: "*", // Allow all headers
 }));
 // Rate limiting 
 const limiter = (0, express_rate_limit_1.default)({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 3000, // 15 minutes
     max: 100,
     message: {
         status: 429,
