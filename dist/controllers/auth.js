@@ -19,6 +19,7 @@ const database_1 = require("../config/database");
 const responseFormatter_1 = require("../utils/responseFormatter");
 const userFormat_1 = require("../utils/userFormat");
 const dotenv_1 = require("dotenv");
+// import { sendNotification } from "../../../ngrx-auth/notification";
 // Load environment variables from .env file
 (0, dotenv_1.config)();
 const key = process.env.SECRET_KEY;

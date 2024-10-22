@@ -5,7 +5,7 @@ import { dbconnection } from "../config/database";
 import { sendResponse } from "../utils/responseFormatter";
 import { formatUserResponse } from "../utils/userFormat";
 import { config } from "dotenv";
-import { sendNotification } from "../services/notification";
+// import { sendNotification } from "../../../ngrx-auth/notification";
 
 // Load environment variables from .env file
 config();

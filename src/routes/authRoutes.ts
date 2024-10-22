@@ -1,7 +1,7 @@
 import express from "express";
 import { login, register } from "../controllers/auth";
 import { verifyToken } from "../middlewares/verifyToken";
-import { sendNotification } from "../services/notification";
+// import { sendNotification } from "../../../ngrx-auth/notification";
 
 const router = express.Router();
 
@@ -16,6 +16,6 @@ router.post("/verifyuser", verifyToken);
 
 // Send Notification
 
-router.post("/send-notification", sendNotification);
+// router.post("/send-notification", sendNotification);
 
 export default router;

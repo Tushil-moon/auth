@@ -4,28 +4,22 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes";
 import path from "path";
 import rateLimit from "express-rate-limit"
-import { fireapp } from "./config/firebase";
-import helmet from "helmet";
+// import { fireapp } from "../../ngrx-auth/firebase";
 
 const PORT = process.env.PORT || 8801;
 const app = express();
  
-fireapp;   
+// fireapp;   
 
 // Middleware
 app.use(bodyParser.json()); 
+
 app.use(cors({
   origin: "*", // Allow all origins (consider specifying for production)
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
-app.use(helmet.contentSecurityPolicy({
-  directives: {
-      defaultSrc: ["'none'"],
-      scriptSrc: ["'self'", "https://vercel.live"]
-  }
-}));
 // Rate limiting 
 const limiter = rateLimit({
   windowMs: 1000, // 1 second
