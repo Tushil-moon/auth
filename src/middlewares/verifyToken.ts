@@ -20,7 +20,6 @@ if (!key) {
 export const verifyToken = (
   req: Request,
   res: Response,
-  next: NextFunction
 ) => {
   const { token } = req.body; // Extract token from request body
 

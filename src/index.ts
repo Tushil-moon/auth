@@ -4,14 +4,18 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes";
 import rateLimit from "express-rate-limit";
 import dotenv from 'dotenv';
-import { fireapp } from "./config/firebase";
+import multer from 'multer';
+import { register } from "./controllers/auth";
+import { fireapp } from "./services/uploadImage";
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 dotenv.config(); // Load environment variables
-fireapp;
+
 const PORT = process.env.PORT || 8801;
 const app = express();
+fireapp;
 
-// Middleware
 app.use(bodyParser.json());
 app.use(cors({
   origin: "*", // Allow all origins
@@ -39,6 +43,8 @@ app.get("/", (req, res) => {
 
 // Auth routes
 app.use("/api/auth", authRoutes);
+
+app.post('/register', upload.single('profileImage'), register);
 
 // Start the server 
 app.listen(PORT, () => {

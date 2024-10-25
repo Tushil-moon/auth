@@ -6,6 +6,7 @@ import { sendResponse } from "../utils/responseFormatter";
 import { formatUserResponse } from "../utils/userFormat";
 import { config } from "dotenv";
 import { getMessaging } from "firebase-admin/messaging";
+import { uploadImageToFirebase } from "../services/uploadImage";
 
 // Load environment variables from .env file
 config();
@@ -18,7 +19,7 @@ if (!key) {
 
 // Register a new user
 export const register = async (req: Request, res: Response) => {
-  const { email, password, name } = req.body;
+  const { email, password, name, profileImage } = req.body;
 
   if (!email) {
     sendResponse(res, {
@@ -44,9 +45,17 @@ export const register = async (req: Request, res: Response) => {
   const connection = await dbconnection.getConnection();
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Upload profile image to Firebase Storage if it exists
+    let publicUrl = null;
+    if (profileImage) {
+      publicUrl = await uploadImageToFirebase(profileImage);
+      
+    }
+    console.log(publicUrl)
     await connection.execute(
-      "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-      [name, email, hashedPassword]
+      "INSERT INTO users (name, email, password, profileImage) VALUES (?, ?, ?,?)",
+      [name, email, hashedPassword, publicUrl]
     );
     sendResponse(res, {
       status: 201,
