@@ -1,13 +1,15 @@
-// import { initializeApp, cert } from "firebase-admin/app";
-// import { ServiceAccount } from "firebase-admin";
+import * as dotenv from 'dotenv';
+dotenv.config();
 
-// const config: ServiceAccount = {
-//   projectId: process.env.FIREBASE_PROJECT_ID,
-//   privateKey: process.env.FIREBASE_PRIVATE_KEY,
-//   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-// };
-// export const fireapp = initializeApp({
-//   credential: cert(config),
-//   projectId: config.projectId,
-//   storageBucket: process.env.STORAGE_BUCKET
-// });
+export default {
+    firebaseConfig:{
+        apiKey: process.env.FIREBASE_API_KEY,
+        authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+        databaseURL: process.env.FIREBASE_CLIENT_EMAIL,
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        storageBucket: process.env.STORAGE_BUCKET,
+        messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.FIREBASE_APP_ID,
+        measurementId: process.env.FIREBASE_MEASUREMENT_ID
+    }
+}

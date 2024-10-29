@@ -4,13 +4,13 @@ import jwt from "jsonwebtoken";
 import { dbconnection } from "../config/database";
 import { sendResponse } from "../utils/responseFormatter";
 import { formatUserResponse } from "../utils/userFormat";
-import { config } from "dotenv";
+import config from "../config/firebase";
 import { getMessaging } from "firebase-admin/messaging";
-import { uploadImageToFirebase } from "../services/uploadImage";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { initializeApp } from "firebase/app";
 
-// Load environment variables from .env file
-config();
-
+initializeApp(config.firebaseConfig);
+const auth = getAuth();
 const key = process.env.SECRET_KEY;
 
 if (!key) {
@@ -19,7 +19,7 @@ if (!key) {
 
 // Register a new user
 export const register = async (req: Request, res: Response) => {
-  const { email, password, name, profileImage } = req.body;
+  const { email, password, name } = req.body;
 
   if (!email) {
     sendResponse(res, {
@@ -42,20 +42,15 @@ export const register = async (req: Request, res: Response) => {
     });
     return;
   }
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+
   const connection = await dbconnection.getConnection();
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Upload profile image to Firebase Storage if it exists
-    let publicUrl = null;
-    if (profileImage) {
-      publicUrl = await uploadImageToFirebase(profileImage);
-      
-    }
-    console.log(publicUrl)
     await connection.execute(
-      "INSERT INTO users (name, email, password, profileImage) VALUES (?, ?, ?,?)",
-      [name, email, hashedPassword, publicUrl]
+      "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
+      [name, email, hashedPassword]
     );
     sendResponse(res, {
       status: 201,
@@ -75,8 +70,16 @@ export const register = async (req: Request, res: Response) => {
 // Login a user
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
+  const auth = getAuth();
   const connection = await dbconnection.getConnection();
   try {
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+    const data = userCredential.user;
+    console.log("User signed in:", data);
     const [rows]: any = await connection.execute(
       "SELECT * FROM users WHERE email = ?",
       [email]
