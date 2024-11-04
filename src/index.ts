@@ -49,31 +49,35 @@ io.on("connection", (socket) => {
 
   // Send message to a specific user in a room
   socket.on("send_message", async (message) => {
-    const { receiverChatID, senderChatID, content } = message;
+    const { receiverChatID, senderChatID, content, status } = message;
     console.log(message);
-  
+
     // Ensure receiverChatID is provided before emitting the message
     if (receiverChatID) {
       let connection; // Declare connection variable
       try {
         connection = await dbconnection.getConnection();
-  
+
         // Insert the message into the database
-        const [result] = await connection.query(`
-          INSERT INTO messages (senderChatID, receiverChatID, content)
-          VALUES (?, ?, ?)
-        `, [senderChatID, receiverChatID, content]);
-  
-        console.log('Message saved with ID:', result);
-        
+        const [result] = await connection.query(
+          `
+          INSERT INTO messages (senderChatID, receiverChatID, content, status)
+          VALUES (?, ?, ?, ?)
+        `,
+          [senderChatID, receiverChatID, content, status]
+        );
+
+        console.log("Message saved with ID:", result);
+
         // Emit the message to the specific receiver
         socket.to(receiverChatID).emit("receive_message", {
           content,
           senderChatID,
           receiverChatID,
+          status,
         });
       } catch (error) {
-        console.error('Error saving message:', error);
+        console.error("Error saving message:", error);
         // Optionally emit an error event back to the sender or log it
       } finally {
         // Ensure the connection is released regardless of success or failure
@@ -82,10 +86,9 @@ io.on("connection", (socket) => {
         }
       }
     } else {
-      console.error('receiverChatID is not provided.');
+      console.error("receiverChatID is not provided.");
     }
   });
-  
 });
 
 // Main route

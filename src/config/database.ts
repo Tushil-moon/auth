@@ -47,9 +47,10 @@ const createMessagesTable = async () => {
         senderChatID VARCHAR(255) NOT NULL,
         receiverChatID VARCHAR(255) NOT NULL,
         content TEXT NOT NULL,
+        status TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-    `);
+    `);   
     
     console.log('Messages table created or already exists.');
     connection.release();

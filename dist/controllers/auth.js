@@ -18,10 +18,12 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const database_1 = require("../config/database");
 const responseFormatter_1 = require("../utils/responseFormatter");
 const userFormat_1 = require("../utils/userFormat");
-const dotenv_1 = require("dotenv");
+const firebase_1 = __importDefault(require("../config/firebase"));
 const messaging_1 = require("firebase-admin/messaging");
-// Load environment variables from .env file
-(0, dotenv_1.config)();
+const auth_1 = require("firebase/auth");
+const app_1 = require("firebase/app");
+(0, app_1.initializeApp)(firebase_1.default.firebaseConfig);
+const auth = (0, auth_1.getAuth)();
 const key = process.env.SECRET_KEY;
 if (!key) {
     throw new Error("secret key not found");
@@ -50,6 +52,7 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
         return;
     }
+    const userCredential = yield (0, auth_1.createUserWithEmailAndPassword)(auth, email, password);
     const connection = yield database_1.dbconnection.getConnection();
     try {
         const hashedPassword = yield bcryptjs_1.default.hash(password, 10);
@@ -74,8 +77,12 @@ exports.register = register;
 // Login a user
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = req.body;
+    const auth = (0, auth_1.getAuth)();
     const connection = yield database_1.dbconnection.getConnection();
     try {
+        const userCredential = yield (0, auth_1.signInWithEmailAndPassword)(auth, email, password);
+        const data = userCredential.user;
+        console.log("User signed in:", data);
         const [rows] = yield connection.execute("SELECT * FROM users WHERE email = ?", [email]);
         if (rows.length === 0) {
             (0, responseFormatter_1.sendResponse)(res, {

@@ -13,7 +13,7 @@ const key = process.env.SECRET_KEY;
 if (!key) {
     throw new Error("secret key not found");
 }
-const verifyToken = (req, res, next) => {
+const verifyToken = (req, res) => {
     const { token } = req.body; // Extract token from request body
     if (!token) {
         res.status(401).json({ message: "Access denied. No token provided." });
