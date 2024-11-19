@@ -9,6 +9,8 @@ import {
 import config from "../config/firebase";
 import { sendResponse } from "../utils/responseFormatter";
 import { dbconnection } from "../config/database";
+import { userInfo } from "os";
+import { getUserChats } from "../utils/userChats";
 
 // Initialize Firebase app
 initializeApp(config.firebaseConfig);
@@ -120,15 +122,13 @@ export const getMessage = async (req: Request, res: Response) => {
       [senderChatID, receiverChatID, receiverChatID, senderChatID]
     );
 
-    return sendResponse(
-      res,{
-        status:200,
-        message:'Message fetch successfully',
-        data:{
-          messages
-        }
-      }
-    ); // Return the list of messages
+    return sendResponse(res, {
+      status: 200,
+      message: "Message fetch successfully",
+      data: {
+        messages,
+      },
+    }); // Return the list of messages
   } catch (error) {
     console.error("Error fetching messages:", error);
     throw error; // Rethrow error to handle it outside
@@ -136,5 +136,36 @@ export const getMessage = async (req: Request, res: Response) => {
     if (connection) {
       connection.release();
     }
+  }
+};
+
+export const getUser = async (req: Request, res: Response) => {
+  const { userId } = req.body;
+  console.log(req.body)
+  if (!userId) {
+    sendResponse(res, {
+      status: 400,
+      message: "userId is required",
+    });
+    return;
+  }
+
+  try {
+    const result = await getUserChats(userId);
+    if (result) {
+      return sendResponse(res, {
+        status: 200,
+        message: "Users fetch successfully",
+        data: result,
+      }); // Return the list of users
+    } else {
+      return sendResponse(res, {
+        status: 400,
+        message: "Users not found",
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error; // Rethrow error to handle it outside
   }
 };

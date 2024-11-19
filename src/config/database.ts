@@ -6,14 +6,17 @@ config();
 
 // Ensure DB_URL is defined
 const dbUrl = process.env.DB_URL;
-console.log(dbUrl);
+
 
 if (!dbUrl) {
   throw new Error("DB_URL is not defined in the environment variables");
 }
 
 // Create a MySQL connection pool
-export const dbconnection = mysql.createPool(dbUrl);
+export const dbconnection = mysql.createPool({
+  uri:dbUrl,
+  enableKeepAlive: true
+});
 const createUsersTable = async () => {
   try {
     const connection = await dbconnection.getConnection();

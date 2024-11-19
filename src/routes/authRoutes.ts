@@ -2,7 +2,8 @@ import express, { Request, Response, NextFunction } from "express";
 import { login, register, sendNotification } from "../controllers/auth";
 import { verifyToken } from "../middlewares/verifyToken";
 import multer from "multer";
-import { getMessage, uploadProfilePic } from "../controllers/user";
+import { getMessage, getUser, uploadProfilePic } from "../controllers/user";
+import { getUserChats } from "../utils/userChats";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -22,6 +23,6 @@ router.post("/verifyuser", verifyToken);
 // Send a notification
 router.post("/send-notification", sendNotification);
 
-router.post('/messages', getMessage)
+
 
 export default router;
