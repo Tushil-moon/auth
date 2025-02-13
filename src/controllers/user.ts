@@ -1,98 +1,74 @@
 import { Request, Response } from "express";
-import { initializeApp } from "firebase/app";
-import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-} from "firebase/storage";
-import config from "../config/firebase";
 import { sendResponse } from "../utils/responseFormatter";
-import { dbconnection } from "../config/database";
-import { userInfo } from "os";
-import { getUserChats } from "../utils/userChats";
-
-// Initialize Firebase app
-initializeApp(config.firebaseConfig);
-const storage = getStorage();
+import { findUser, getUserChats } from "../utils/userChats";
+import { sqlDB } from "../config/db.config";
+import { formatUserResponse } from "../utils/userFormat";
 
 // Define a CustomRequest interface extending the Express Request
 export interface CustomRequest extends Request {
-  file: Express.Multer.File; // Assuming file will always be present
-  userId: string; // Use the appropriate type for userId
+  file: Express.Multer.File;
 }
 
-// Placeholder for a user function; implement as needed
-export const user = async (req: any, res: Response) => {};
-
-export const uploadProfilePic = async (
-  req: any, // Use CustomRequest to access file and userId
-  res: Response
-): Promise<void> => {
-  //   console.log(req);
-
-  // Get a connection to the database
-  const connection = await dbconnection.getConnection();
-
+export const uploadProfilePic = async (req: Request, res: Response) => {
+  let connection;
   try {
-    if (!req.file) {
+    connection = await sqlDB.getConnection();
+
+    const customReq = req as CustomRequest;
+    const { file } = customReq;
+    console.log(file);
+    const id = customReq.query.id;
+
+    const { buffer } = file;
+    // Convert buffer to Base64 string
+    const base64String = buffer.toString("base64");
+    // console.log(base64String)
+    // Optionally, prefix the string with the data URL scheme for direct usage in HTML
+    const mimeType = file.mimetype; // e.g., 'image/jpeg'
+    const dataUrl = `data:${mimeType};base64,${base64String}`;
+    // Update profile image in the database
+    const updateQuery = "UPDATE users SET profileImage = ? WHERE id = ?";
+    await connection.query(updateQuery, [dataUrl, id]);
+
+    // Retrieve updated user data
+    const [result]: any = await connection.execute(
+      "SELECT * FROM users WHERE id = ?",
+      [id]
+    );
+
+    // Ensure a single result is returned
+    const updatedUser = result.length ? result[0] : null;
+
+    if (!updatedUser) {
       return sendResponse(res, {
-        status: 400,
-        message: "No file uploaded",
+        status: 404,
+        message: "User not found.",
       });
     }
-
-    const dateTime = Date.now();
-    const storageRef = ref(
-      storage,
-      `files/${req.file.originalname} ${dateTime}`
-    );
-    const metadata = {
-      contentType: req.file.mimetype,
-    };
-
-    // Upload the file to Firebase Storage
-    const snapshot = await uploadBytesResumable(
-      storageRef,
-      req.file.buffer,
-      metadata
-    );
-
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    console.log("File uploaded!");
-
-    // Get user ID from request
-    const userId = req.body.id; // Ensure userId is set before reaching this point
-
-    // Update the user's profile picture URL in the database
-    const data = await connection.execute(
-      "UPDATE users SET profileImage = ? WHERE id = ?",
-      [downloadURL, userId]
-    );
-    const [updatedUser] = await connection.execute(
-      "SELECT * FROM users WHERE id = ?",
-      [userId]
-    );
 
     return sendResponse(res, {
       status: 200,
       message: "File uploaded successfully!",
-      data: updatedUser,
+      data: formatUserResponse([updatedUser]),
     });
   } catch (error: any) {
-    console.error("Error uploading file:", error); // Log the error for debugging
+    console.error("Error uploading file:", error);
     return sendResponse(res, {
-      status: 400,
+      status: 500,
       message: error.message || "An error occurred while uploading.",
     });
   } finally {
-    // Always release the database connection
-    await connection.release();
+    if (connection) {
+      connection.release();
+    }
   }
 };
 
 export const getMessage = async (req: Request, res: Response) => {
   const { senderChatID, receiverChatID } = req.body;
+  const limit = parseInt(req.query.limit as string) || 100; // Default to 100 messages if not provided
+  const offset = parseInt(req.query.offset as string) || 0; // Default to 0 for the first batch
+
   if (!senderChatID) {
     sendResponse(res, {
       status: 400,
@@ -100,6 +76,7 @@ export const getMessage = async (req: Request, res: Response) => {
     });
     return;
   }
+
   if (!receiverChatID) {
     sendResponse(res, {
       status: 400,
@@ -107,19 +84,27 @@ export const getMessage = async (req: Request, res: Response) => {
     });
     return;
   }
+
   let connection;
   try {
-    connection = await dbconnection.getConnection();
+    connection = await sqlDB.getConnection();
 
-    // Query to fetch messages between sender and receiver
+    // Query to fetch paginated messages between sender and receiver
     const [messages] = await connection.query(
       `
       SELECT * FROM messages 
       WHERE (senderChatID = ? AND receiverChatID = ?) 
          OR (senderChatID = ? AND receiverChatID = ?)
-      ORDER BY created_at ASC
+      ORDER BY created_at DESC
     `,
-      [senderChatID, receiverChatID, receiverChatID, senderChatID]
+      [
+        senderChatID,
+        receiverChatID,
+        receiverChatID,
+        senderChatID,
+        limit,
+        offset,
+      ]
     );
 
     return sendResponse(res, {
@@ -128,7 +113,7 @@ export const getMessage = async (req: Request, res: Response) => {
       data: {
         messages,
       },
-    }); // Return the list of messages
+    }); // Return the paginated list of messages
   } catch (error) {
     console.error("Error fetching messages:", error);
     throw error; // Rethrow error to handle it outside
@@ -141,7 +126,7 @@ export const getMessage = async (req: Request, res: Response) => {
 
 export const getUser = async (req: Request, res: Response) => {
   const { userId } = req.body;
-  console.log(req.body)
+  console.log(req.body);
   if (!userId) {
     sendResponse(res, {
       status: 400,
@@ -169,3 +154,107 @@ export const getUser = async (req: Request, res: Response) => {
     throw error; // Rethrow error to handle it outside
   }
 };
+
+export const findUserById = async (req: Request, res: Response) => {
+  const email = req.query.email;
+  console.log(req.body);
+  if (!email) {
+    sendResponse(res, {
+      status: 400,
+      message: "email is required",
+    });
+    return;
+  }
+
+  try {
+    const result = await findUser(email);
+
+    if (result.length === 0) {
+      return sendResponse(res, {
+        status: 404,
+        message: "User not found!",
+      });
+    }
+
+    sendResponse(res, {
+      status: 200,
+      message: "User found!",
+      data: [formatUserResponse(result)],
+    });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error; // Rethrow error to handle it outside
+  }
+};
+
+export const deleteMsgById = async (req: Request, res: Response) => {
+  let connection;
+  try {
+    connection = await sqlDB.getConnection();
+    console.log(req.query);
+    const { id } = req.query;
+    if (!id) {
+      sendResponse(res, {
+        status: 400,
+        message: "id is required",
+      });
+      return;
+    }
+
+    const query = `
+    DELETE FROM messages
+    WHERE id = ? 
+    `;
+    await connection.query(query, id);
+
+    sendResponse(res, {
+      status: 200,
+      message: "Message deleted",
+    });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error; // Rethrow error to handle it outside
+  }
+};
+
+export const getUserNewChats = async (req: Request, res: Response) => {
+  let connection;
+  try {
+    const { senderId, receiverId, offset } = req.body;
+    connection = await sqlDB.getConnection();
+    
+    if (!senderId || !receiverId) {
+      sendResponse(res, { status: 400, message: "Id is required" });
+      return;
+    }
+
+    console.log("Offset:", offset);
+
+    const query = `
+      SELECT * FROM (
+          SELECT * FROM messages 
+          WHERE (senderChatID = ? AND receiverChatID = ?) 
+             OR (senderChatID = ? AND receiverChatID = ?)
+          ORDER BY created_at DESC
+          LIMIT 25 OFFSET ?
+      ) AS subquery
+      ORDER BY created_at ASC;
+    `;
+
+    const [rows] = await connection.execute(query, [
+      senderId, receiverId, receiverId, senderId, offset
+    ]);
+
+    sendResponse(res, {
+      status: 200,
+      message: "Fetched",
+      data: { messages: rows },
+    });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    sendResponse(res, { status: 500, message: "Server error" });
+  } finally {
+    if (connection) connection.release(); // Ensure connection is released
+  }
+};
+

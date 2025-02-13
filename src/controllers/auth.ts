@@ -1,67 +1,76 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { dbconnection } from "../config/database";
+import { sqlDB } from "../config/db.config";
 import { sendResponse } from "../utils/responseFormatter";
-import { formatUserResponse } from "../utils/userFormat";
-import config from "../config/firebase";
 import { getMessaging } from "firebase-admin/messaging";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { initializeApp } from "firebase/app";
 
-initializeApp(config.firebaseConfig);
-const auth = getAuth();
-const key = process.env.SECRET_KEY;
+// Ensure the secret key is available
+const SECRET_KEY = process.env.SECRET_KEY;
 
-if (!key) {
-  throw new Error("secret key not found");
+if (!SECRET_KEY) {
+  throw new Error("Secret key not found in environment variables.");
 }
 
-// Register a new user
-export const register = async (req: Request, res: Response) => {
-  const { email, password, name } = req.body;
+export const register = async (req: Request, res: Response): Promise<void> => {
+  const { email, password, name, FCM } = req.body;
 
-  if (!email) {
-    sendResponse(res, {
+  // Input validation
+  if (!email || !password || !name) {
+    return sendResponse(res, {
       status: 400,
-      message: "email is required",
+      message: "Name, email, and password are required.",
     });
-    return;
   }
-  if (!name) {
-    sendResponse(res, {
-      status: 400,
-      message: "name is required",
-    });
-    return;
-  }
-  if (!password) {
-    sendResponse(res, {
-      status: 400,
-      message: "password is required",
-    });
-    return;
-  }
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-  const connection = await dbconnection.getConnection();
+  const connection = await sqlDB.getConnection();
   try {
+    // Check if the email is already registered
+    const [existingUser]: any = await connection.execute(
+      "SELECT id FROM users WHERE email = ?",
+      [email]
+    );
+
+    if (existingUser.length > 0) {
+      return sendResponse(res, {
+        status: 400,
+        message: "Email is already in use.",
+      });
+    }
+
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await connection.execute(
+    // Insert the new user into the database
+    const [result]: any = await connection.execute(
       "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
       [name, email, hashedPassword]
     );
+
+    // Respond with the newly created user details
     sendResponse(res, {
       status: 201,
-      message: "User registered successfully!",
+      message: "User registered successfully.",
+      data: {
+        id: result.insertId,
+        name,
+        email,
+      },
     });
-  } catch (error) {
-    console.error(error);
-    sendResponse(res, {
-      status: 500,
-      message: "Registration failed!",
-    });
+  } catch (error: any) {
+    console.error("Error during user registration:", error);
+
+    if (error.code === "ER_DUP_ENTRY") {
+      sendResponse(res, {
+        status: 400,
+        message: "Email is already in use.",
+      });
+    } else {
+      sendResponse(res, {
+        status: 500,
+        message: "An unexpected error occurred during registration.",
+      });
+    }
   } finally {
     connection.release();
   }
@@ -70,16 +79,17 @@ export const register = async (req: Request, res: Response) => {
 // Login a user
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
-  const auth = getAuth();
-  const connection = await dbconnection.getConnection();
+
+  if (!email || !password) {
+    sendResponse(res, {
+      status: 400,
+      message: "Email and password are required.",
+    });
+    return;
+  }
+
+  const connection = await sqlDB.getConnection();
   try {
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    const data = userCredential.user;
-    console.log("User signed in:", data);
     const [rows]: any = await connection.execute(
       "SELECT * FROM users WHERE email = ?",
       [email]
@@ -88,7 +98,7 @@ export const login = async (req: Request, res: Response) => {
     if (rows.length === 0) {
       sendResponse(res, {
         status: 404,
-        message: "User not found!",
+        message: "User not found.",
       });
       return;
     }
@@ -99,66 +109,74 @@ export const login = async (req: Request, res: Response) => {
     if (!passwordMatch) {
       sendResponse(res, {
         status: 400,
-        message: "Invalid email or password",
+        message: "Invalid email or password.",
       });
       return;
     }
 
-    const token = jwt.sign({ userId: user.id }, key, {
+    const token = jwt.sign({ userId: user.id }, SECRET_KEY, {
       expiresIn: "1h",
     });
-
     sendResponse(res, {
       status: 200,
-      message: "Login successful",
+      message: "Login successful.",
       data: {
-        token,
-        user: formatUserResponse(user),
+        access_token: token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          profileImage: user.profileImage,
+        },
       },
     });
   } catch (error) {
     sendResponse(res, {
       status: 500,
-      message: "Login failed",
+      message: "Login failed.",
     });
   } finally {
     connection.release();
-    console.log("connection release!");
   }
 };
 
-export const sendNotification = (req: any, res: any) => {
-  const data = req.body; // Fcm token received by front end application
-  console.log(data);
-  if (!data) {
+export const sendNotification = async (req: Request, res: Response) => {
+  const { notification, to } = req.body;
+
+  if (!notification || !to) {
     sendResponse(res, {
       status: 400,
-      message: "provide correct data",
+      message: "Notification and recipient token are required.",
     });
+    return;
   }
+
   const message = {
     notification: {
-      title: data.notification.title,
-      body: data.notification.body,
+      title: notification.title,
+      body: notification.body,
     },
     webpush: {
       notification: {
-        icon: data.notification.icon, // Set the icon for web notifications
+        icon: notification.icon,
       },
     },
-    token: data.to, // FCM token from client-side
+    token: to,
   };
-  getMessaging()
-    .send(message)
-    .then((response) => {
-      console.log("Notification Sent");
-      sendResponse(res, {
-        status: 200,
-        message: "notification sent",
-        data: "",
-      });
-    })
-    .catch((error) => {
-      console.log("Error sending message:", error);
+
+  try {
+    const response = await getMessaging().send(message);
+    console.log(response)
+    sendResponse(res, {
+      status: 200,
+      message: "Notification sent successfully.",
+      data: response,
     });
+  } catch (error: any) {
+    console.log(error)
+    sendResponse(res, {
+      status: 500,
+      message: "Failed to send notification.",
+    });
+  }
 };

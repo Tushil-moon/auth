@@ -17,10 +17,7 @@ if (!key) {
   throw new Error("secret key not found");
 }
 
-export const verifyToken = (
-  req: Request,
-  res: Response,
-) => {
+export const verifyToken = (req: Request, res: Response) => {
   const { token } = req.body; // Extract token from request body
 
   if (!token) {
@@ -37,7 +34,7 @@ export const verifyToken = (
     sendResponse(res, {
       status: 200,
       message: "user verified",
-      data:true
+      data: true,
     });
   });
 };

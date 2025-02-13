@@ -1,7 +1,6 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 import { config } from "dotenv";
-import { sendResponse } from "../utils/responseFormatter";
 
 config();
 
@@ -21,17 +20,21 @@ const authenticateToken = (
   next: NextFunction
 ) => {
   const authHeader = req.headers.authorization;
-
+  // console.log(authHeader)
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
-
-  const token = authHeader.split(' ')[1];
-  console.log(token)
+  let token;
+  if(authHeader.startsWith("Bearer ")){
+    token = authHeader.split(' ')[1];
+  }else{
+    token = authHeader
+  }
+  // console.log(token)
 
   try {
-    const decoded = jwt.verify(token, key);
+    const decoded = jwt.verify(token!, key);
     req.user = decoded;
     next();
   } catch (err) {
